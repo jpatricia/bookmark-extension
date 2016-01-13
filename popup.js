@@ -1,7 +1,53 @@
-function getRecent(){
-  // get the recent bookmarks(3) and show it in the recent_list
-  // return the array of BookmarkTreeNode
-  
+
+// Search the bookmarks when entering the search keyword.
+$(function() {
+  $('#search').change(function() {
+     $('#bookmarks').empty();
+     dumpBookmarks($('#search').val());
+  });
+});
+
+// Traverse the bookmark tree, and print the folder and nodes.
+function dumpBookmarks(query) {
+  var bookmarkTreeNodes = chrome.bookmarks.getTree(
+    function(bookmarkTreeNodes) {
+      $('#bookmarks').append(dumpTreeNodes(bookmarkTreeNodes, query));
+    });
+}
+
+function dumpTreeNodes(bookmarkNodes, query) {
+  var list = $('<ul>');
+  var i;
+  for (i = 0; i < bookmarkNodes.length; i++) {
+    list.append(dumpNode(bookmarkNodes[i], query));
+  }
+  return list;
+}
+function dumpNode(bookmarkNode, query) {
+  if (bookmarkNode.title) {
+    if (query && !bookmarkNode.children) {
+      if (String(bookmarkNode.title).indexOf(query) == -1) {
+        return $('<span></span>');
+      }
+    }
+    var anchor = $('<a>');
+    anchor.attr('href', bookmarkNode.url);
+    anchor.text(bookmarkNode.title);
+    /*
+     * When clicking on a bookmark in the extension, a new tab is fired with
+     * the bookmark url.
+     */
+    anchor.click(function() {
+      chrome.tabs.create({url: bookmarkNode.url});
+    });
+    var span = $('<span>');
+    span.append(anchor);
+  }
+	  var li = $(bookmarkNode.title ? '<li>' : '<div>').append(span);
+	  if (bookmarkNode.children && bookmarkNode.children.length > 0) {
+	    li.append(dumpTreeNodes(bookmarkNode.children, query));
+	  }
+	  return li;
 }
 
 function createListElement(id, info) {
@@ -16,7 +62,7 @@ function createListElement(id, info) {
   return div;
 }
 
-function makeRecent(callback){
+function getRecent(callback){
   // this function creates the list of recent bookmarks
   // recentList is the array of Recent bookmarks
   chrome.bookmarks.getRecent(3,function(recentList){
@@ -32,15 +78,8 @@ function makeRecent(callback){
   });
 }
 
-function makeSearch(search_info, callback){
-  //this function is creating the list of searches
-  chrome.bookmarks.search(search_query,function(searchList){
-    var list_search = document.getElementById('');
-  });
-}
-
 
 // -----  EVENT LISTENER -----
-document.addEventListener('DOMContentLoaded', function(){
-	console.log("HELLO");
+document.addEventListener('DOMContentLoaded', function () {
+  dumpBookmarks();
 });
